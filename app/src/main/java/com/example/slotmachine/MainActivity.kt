@@ -1,17 +1,19 @@
 package com.example.slotmachine
 
-
-
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
@@ -25,16 +27,56 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    SlotMachineScreen()
+                    AppNavigator()
                 }
             }
         }
     }
 }
 
+
+@Composable
+fun AppNavigator() {
+    var currentScreen by remember { mutableStateOf("title") }
+
+    when (currentScreen) {
+        "title" -> TitleScreen(onPlay = { currentScreen = "game" })
+        "game"  -> SlotMachineScreen(onBack = { currentScreen = "title" })
+    }
+}
+
+
+@Composable
+fun TitleScreen(onPlay: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "Welcome to How to be a Millionaire Game",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black,
+            textAlign = TextAlign.Center,
+            lineHeight = 38.sp
+        )
+
+        Spacer(modifier = Modifier.height(48.dp))
+
+        Button(onClick = onPlay) {
+            Text(text = "Start Game", fontSize = 18.sp)
+        }
+    }
+}
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SlotMachineScreen() {
+fun SlotMachineScreen(onBack: () -> Unit) {
     // Counts for the 3 slots
     var count1 by remember { mutableIntStateOf(0) }
     var count2 by remember { mutableIntStateOf(0) }
@@ -53,7 +95,27 @@ fun SlotMachineScreen() {
     val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Who Wants to be a Millionaire Slot Machine!!!") }) }
+        topBar = {
+            TopAppBar(
+                title = { Text("Who Wants to be a Millionaire Slot Machine!!!") },
+                navigationIcon = {
+
+                    IconButton(onClick = {
+
+                        job1?.cancel()
+                        job2?.cancel()
+                        job3?.cancel()
+                        onBack()
+                    }) {
+                        Text(
+                            text = "← Back",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            )
+        }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -62,14 +124,14 @@ fun SlotMachineScreen() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Win/Loss Message
+
             Text(
                 text = resultMessage,
                 fontSize = 28.sp,
                 modifier = Modifier.padding(bottom = 24.dp)
             )
 
-            // Three slot images in a centered row
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -86,7 +148,7 @@ fun SlotMachineScreen() {
 
             Spacer(modifier = Modifier.height(60.dp))
 
-            // Control Logic
+
             if (!isRunning) {
                 Button(onClick = {
                     // Reset game
@@ -94,7 +156,7 @@ fun SlotMachineScreen() {
                     stoppedCount = 0
                     isRunning = true
 
-                    // Cycle 0-3 with different delays
+
                     job1 = coroutineScope.launch(Dispatchers.Default) {
                         while (true) {
                             delay(100)
@@ -118,7 +180,7 @@ fun SlotMachineScreen() {
                 }
             } else {
                 Button(onClick = {
-                    // Stop one coroutine per click
+
                     when (stoppedCount) {
                         0 -> job1?.cancel()
                         1 -> job2?.cancel()
@@ -136,13 +198,13 @@ fun SlotMachineScreen() {
                     }
                     stoppedCount++
                 }) {
-                    // Button always says STOP
                     Text("STOP", fontSize = 20.sp)
                 }
             }
         }
     }
 }
+
 
 @Composable
 fun SlotDisplay(value: Int) {
